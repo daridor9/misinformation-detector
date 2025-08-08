@@ -1,5 +1,6 @@
 from api_server_enhanced import app
 import os
+import uvicorn
 
 # Add a root endpoint
 @app.get("/")
@@ -10,7 +11,6 @@ async def root():
         "health": "Visit /health to check status"
     }
 
-if __name__ == "__main__":
-    import uvicorn
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+# Run the server directly
+port = int(os.environ.get("PORT", 8000))
+uvicorn.run(app, host="0.0.0.0", port=port)
