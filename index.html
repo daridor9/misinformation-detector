@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Content Analysis Tool</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 800px; 
+            margin: 0 auto; 
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        textarea { 
+            width: 100%; 
+            min-height: 150px; 
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button { 
+            background: #007bff; 
+            color: white; 
+            padding: 12px 30px; 
+            border: none; 
+            border-radius: 5px;
+            cursor: pointer; 
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        #results { 
+            margin-top: 20px; 
+            padding: 20px; 
+            background: #f0f0f0; 
+            border-radius: 5px;
+            display: none;
+        }
+        .error {
+            color: #dc3545;
+            padding: 10px;
+            background: #f8d7da;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .success {
+            color: #155724;
+            padding: 10px;
+            background: #d4edda;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .risk-high { color: #dc3545; font-weight: bold; }
+        .risk-medium { color: #ffc107; font-weight: bold; }
+        .risk-low { color: #28a745; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Content Analysis Tool</h1>
+        <p>Enter text below to analyze for risk assessment</p>
+        
+        <textarea id="contentInput" placeholder="Enter text to analyze..."></textarea>
+        
+        <button onclick="analyzeContent()">Analyze Content</button>
+        
+        <div id="status"></div>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        async function analyzeContent() {
+            const text = document.getElementById('contentInput').value;
+            const statusDiv = document.getElementById('status');
+            const resultsDiv = document.getElementById('results');
+            
+            if (!text.trim()) {
+                statusDiv.innerHTML = '<div class="error">Please enter some text to analyze</div>';
+                return;
+            }
+            
+            statusDiv.innerHTML = '<div class="success">Analyzing...</div>';
+            resultsDiv.style.display = 'none';
+            
+            try {
+                console.log('Sending request to API...');
+                const response = await fetch('http://localhost:8000/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: text,
+                        platform: 'web'
+                    })
+                });
+                
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('Analysis result:', data);
+                
+                // Determine risk level class
+                let riskClass = 'risk-low';
+                if (data.risk_score > 0.7) riskClass = 'risk-high';
+                else if (data.risk_score > 0.4) riskClass = 'risk-medium';
+                
+                resultsDiv.innerHTML = `
+                    <h3>Analysis Results</h3>
+                    <p><strong>Risk Score:</strong> <span class="${riskClass}">${(data.risk_score * 100).toFixed(1)}%</span></p>
+                    <p><strong>Threat Level:</strong> <span class="${riskClass}">${data.threat_level.toUpperCase()}</span></p>
+                    <p><strong>Content Length:</strong> ${data.content_length} characters</p>
+                    ${data.indicators ? `
+                        <h4>Risk Components:</h4>
+                        <ul>
+                            ${Object.entries(data.indicators).map(([key, value]) => 
+                                `<li>${key.replace(/_/g, ' ')}: ${(value * 100).toFixed(1)}%</li>`
+                            ).join('')}
+                        </ul>
+                    ` : ''}
+                `;
+                resultsDiv.style.display = 'block';
+                statusDiv.innerHTML = '<div class="success">Analysis complete!</div>';
+                
+            } catch (error) {
+                console.error('Error:', error);
+                statusDiv.innerHTML = `<div class="error">Error: ${error.message}. Make sure the API server is running on port 8000</div>`;
+                resultsDiv.style.display = 'none';
+            }
+        }
+        
+        // Test connection on page load
+        window.onload = async function() {
+            try {
+                const response = await fetch('http://localhost:8000/health');
+                const data = await response.json();
+                console.log('API health check:', data);
+            } catch (error) {
+                console.error('API not reachable:', error);
+            }
+        }
+    </script>
+</body>
+</html>

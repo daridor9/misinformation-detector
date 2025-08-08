@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Misinformation Detection System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .risk-low { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+        .risk-medium { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+        .risk-high { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+        .animate-pulse-slow { animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <svg class="w-8 h-8 text-blue-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <h1 class="text-2xl font-bold text-gray-900">Misinformation Detection System</h1>
+                    </div>
+                    <span class="text-sm text-gray-500">v2.0 Enhanced</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Input Section -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h2 class="text-xl font-semibold mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                        </svg>
+                        Content Analysis
+                    </h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Enter content to analyze</label>
+                            <textarea 
+                                id="contentInput" 
+                                rows="6" 
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                                placeholder="Paste or type content here..."
+                            ></textarea>
+                        </div>
+                        
+                        <div class="flex gap-3">
+                            <button 
+                                onclick="analyzeContent()" 
+                                class="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition duration-200 flex items-center justify-center"
+                            >
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                </svg>
+                                Analyze Content
+                            </button>
+                            <button 
+                                onclick="clearAll()" 
+                                class="px-6 py-3 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition duration-200"
+                            >
+                                Clear
+                            </button>
+                        </div>
+                        
+                        <!-- Quick Examples -->
+                        <div class="pt-4 border-t">
+                            <p class="text-sm text-gray-600 mb-2">Quick examples:</p>
+                            <div class="flex flex-wrap gap-2">
+                                <button onclick="loadExample('low')" class="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full hover:bg-green-200">Low Risk</button>
+                                <button onclick="loadExample('medium')" class="text-xs bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full hover:bg-yellow-200">Medium Risk</button>
+                                <button onclick="loadExample('high')" class="text-xs bg-red-100 text-red-700 px-3 py-1 rounded-full hover:bg-red-200">High Risk</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results Section -->
+                <div id="resultsSection" class="space-y-6 hidden">
+                    <!-- Risk Score Card -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="text-xl font-semibold mb-4">Risk Assessment</h3>
+                        <div class="text-center">
+                            <div id="riskMeter" class="relative inline-flex items-center justify-center">
+                                <svg class="transform -rotate-90 w-32 h-32">
+                                    <circle cx="64" cy="64" r="56" stroke="#e5e7eb" stroke-width="12" fill="none"></circle>
+                                    <circle id="riskCircle" cx="64" cy="64" r="56" stroke="#3b82f6" stroke-width="12" fill="none"
+                                        stroke-dasharray="351.86" stroke-dashoffset="351.86" class="transition-all duration-1000"></circle>
+                                </svg>
+                                <div class="absolute">
+                                    <div id="riskPercentage" class="text-3xl font-bold">0%</div>
+                                    <div id="threatLevel" class="text-sm text-gray-600">-</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Threat Level Badge -->
+                        <div id="threatBadge" class="mt-6 text-center">
+                            <span class="px-6 py-3 rounded-full text-white font-semibold text-lg"></span>
+                        </div>
+                    </div>
+
+                    <!-- Risk Components Chart -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="text-xl font-semibold mb-4">Risk Components Analysis</h3>
+                        <canvas id="riskChart" width="400" height="200"></canvas>
+                    </div>
+
+                    <!-- Detailed Indicators -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="text-xl font-semibold mb-4">Detected Indicators</h3>
+                        <div id="indicatorsList" class="space-y-2"></div>
+                    </div>
+
+                    <!-- Statistics -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+cat > index_enhanced.html << 'EOF'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Misinformation Detection System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .risk-low { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+        .risk-medium { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+        .risk-high { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+        .animate-pulse-slow { animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <svg class="w-8 h-8 text-blue-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <h1 class="text-2xl font-bold text-gray-900">Misinformation Detection System</h1>
+                    </div>
+                    <span class="text-sm text-gray-500">v2.0 Enhanced</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Input Section -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h2 class="text-xl font-semibold mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                        </svg>
+                        Content Analysis
+                    </h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Enter content to analyze</label>
+                            <textarea 
+                                id="contentInput" 
+                                rows="6" 
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                                placeholder="Paste or type content here..."
+                            ></textarea>
+                        </div>
+                        
+                        <div class="flex gap-3">
+                            <button 
+                                onclick="analyzeContent()" 
+                                class="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition duration-200 flex items-center justify-center"
+                            >
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                </svg>
+                                Analyze Content
+                            </button>
+                            <button 
+                                onclick="clearAll()" 
+                                class="px-6 py-3 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition duration-200"
+                            >
+                                Clear
+                            </button>
+                        </div>
+                        
+                        <!-- Quick Examples -->
+                        <div class="pt-4 border-t">
+                            <p class="text-sm text-gray-600 mb-2">Quick examples:</p>
+                            <div class="flex flex-wrap gap-2">
+                                <button onclick="loadExample('low')" class="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full hover:bg-green-200">Low Risk</button>
+                                <button onclick="loadExample('medium')" class="text-xs bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full hover:bg-yellow-200">Medium Risk</button>
+                                <button onclick="loadExample('high')" class="text-xs bg-red-100 text-red-700 px-3 py-1 rounded-full hover:bg-red-200">High Risk</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results Section -->
+                <div id="resultsSection" class="space-y-6 hidden">
+                    <!-- Risk Score Card -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="text-xl font-semibold mb-4">Risk Assessment</h3>
+                        <div class="text-center">
+                            <div id="riskMeter" class="relative inline-flex items-center justify-center">
+                                <svg class="transform -rotate-90 w-32 h-32">
+                                    <circle cx="64" cy="64" r="56" stroke="#e5e7eb" stroke-width="12" fill="none"></circle>
+                                    <circle id="riskCircle" cx="64" cy="64" r="56" stroke="#3b82f6" stroke-width="12" fill="none"
+                                        stroke-dasharray="351.86" stroke-dashoffset="351.86" class="transition-all duration-1000"></circle>
+                                </svg>
+                                <div class="absolute">
+                                    <div id="riskPercentage" class="text-3xl font-bold">0%</div>
+                                    <div id="threatLevel" class="text-sm text-gray-600">-</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Threat Level Badge -->
+                        <div id="threatBadge" class="mt-6 text-center">
+                            <span class="px-6 py-3 rounded-full text-white font-semibold text-lg"></span>
+                        </div>
+                    </div>
+
+                    <!-- Risk Components Chart -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="text-xl font-semibold mb-4">Risk Components Analysis</h3>
+                        <canvas id="riskChart" width="400" height="200"></canvas>
+                    </div>
+
+                    <!-- Detailed Indicators -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="text-xl font-semibold mb-4">Detected Indicators</h3>
+                        <div id="indicatorsList" class="space-y-2"></div>
+                    </div>
+
+                    <!-- Statistics -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="text-xl font-semibold mb-4">Content Statistics</h3>
+                        <div id="statistics" class="grid grid-cols-2 gap-4"></div>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div id="emptyState" class="bg-white rounded-xl shadow-lg p-12 text-center">
+                    <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                    </svg>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">No Analysis Yet</h3>
+                    <p class="text-gray-500">Enter content and click "Analyze" to see results</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let riskChart = null;
+
+        const examples = {
+            low: "The weather forecast shows sunny skies for the weekend. Temperature will be around 75 degrees.",
+            medium: "Breaking: New study reveals surprising facts about coffee consumption. Click here to learn more!",
+            high: "URGENT!!! This SHOCKING secret they don't want you to know! Government EXPOSED! Share before it's DELETED!!!"
+        };
+
+        function loadExample(level) {
+            document.getElementById('contentInput').value = examples[level];
+        }
+
+        function clearAll() {
+            document.getElementById('contentInput').value = '';
+            document.getElementById('resultsSection').classList.add('hidden');
+            document.getElementById('emptyState').classList.remove('hidden');
+        }
+
+        async function analyzeContent() {
+            const text = document.getElementById('contentInput').value.trim();
+            if (!text) {
+                alert('Please enter some content to analyze');
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:8000/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text, platform: 'web' })
+                });
+
+                if (!response.ok) throw new Error('Analysis failed');
+                
+                const data = await response.json();
+                displayResults(data);
+                
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        function displayResults(data) {
+            // Show results, hide empty state
+            document.getElementById('resultsSection').classList.remove('hidden');
+            document.getElementById('emptyState').classList.add('hidden');
+
+            // Update risk meter
+            const percentage = Math.round(data.risk_score * 100);
+            const offset = 351.86 - (351.86 * data.risk_score);
+            const circle = document.getElementById('riskCircle');
+            
+            document.getElementById('riskPercentage').textContent = percentage + '%';
+            document.getElementById('threatLevel').textContent = data.threat_level.toUpperCase();
+            
+            // Set circle color based on threat level
+            const colors = {
+                green: '#10b981',
+                yellow: '#f59e0b',
+                orange: '#f97316',
+                red: '#ef4444'
+            };
+            circle.style.stroke = colors[data.threat_level];
+            circle.style.strokeDashoffset = offset;
+
+            // Update threat badge
+            const badge = document.querySelector('#threatBadge span');
+            badge.textContent = `Threat Level: ${data.threat_level.toUpperCase()}`;
+            badge.className = `px-6 py-3 rounded-full text-white font-semibold text-lg risk-${data.threat_level === 'orange' ? 'high' : data.threat_level === 'yellow' ? 'medium' : data.threat_level}`;
+
+            // Update risk components chart
+            if (data.detailed_analysis && data.detailed_analysis.risk_breakdown) {
+                updateRiskChart(data.detailed_analysis.risk_breakdown);
+            }
+
+            // Update indicators list
+            const indicatorsList = document.getElementById('indicatorsList');
+            indicatorsList.innerHTML = '';
+            
+            for (const [key, detected] of Object.entries(data.indicators)) {
+                const div = document.createElement('div');
+                div.className = `flex items-center justify-between p-3 rounded-lg ${detected ? 'bg-red-50' : 'bg-gray-50'}`;
+                div.innerHTML = `
+                    <span class="font-medium capitalize">${key.replace(/_/g, ' ')}</span>
+                    <span class="${detected ? 'text-red-600' : 'text-gray-400'}">
+                        ${detected ? '⚠️ Detected' : '✓ Not found'}
+                    </span>
+                `;
+                indicatorsList.appendChild(div);
+            }
+
+            // Update statistics
+            const stats = document.getElementById('statistics');
+            stats.innerHTML = `
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <div class="text-2xl font-bold text-gray-900">${data.content_length}</div>
+                    <div class="text-sm text-gray-600">Characters</div>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <div class="text-2xl font-bold text-gray-900">${data.detailed_analysis?.total_exclamations || 0}</div>
+                    <div class="text-sm text-gray-600">Exclamations</div>
+                </div>
+            `;
+        }
+
+        function updateRiskChart(riskBreakdown) {
+            const ctx = document.getElementById('riskChart').getContext('2d');
+            
+            const labels = Object.keys(riskBreakdown).map(k => k.replace(/_/g, ' '));
+            const values = Object.values(riskBreakdown).map(v => parseFloat(v));
+            
+            if (riskChart) {
+                riskChart.destroy();
+            }
+            
+            riskChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Risk Level (%)',
+                        data: values,
+                        backgroundColor: values.map(v => 
+                            v > 20 ? '#ef4444' : v > 10 ? '#f59e0b' : '#10b981'
+                        ),
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 30
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Misinformation Detection System v2</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header { 
+            background: white; 
+            padding: 20px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            border-radius: 10px;
+        }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        .card { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { font-size: 28px; color: #1a73e8; }
+        h2 { font-size: 20px; margin-bottom: 20px; color: #202124; }
+        textarea { 
+            width: 100%; 
+            padding: 15px; 
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            resize: vertical;
+            min-height: 150px;
+        }
+        button { 
+            padding: 12px 24px; 
+            border: none; 
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 5px;
+        }
+        .btn-primary { 
+            background: #1a73e8; 
+            color: white; 
+        }
+        .btn-primary:hover { background: #1557b0; }
+        .btn-secondary { 
+            background: #f1f3f4; 
+            color: #5f6368; 
+        }
+        .btn-secondary:hover { background: #e0e0e0; }
+        .examples { margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e0e0; }
+        .example-btn { 
+            padding: 6px 12px; 
+            font-size: 14px; 
+            border-radius: 20px;
+            margin: 5px;
+        }
+        .risk-low { background: #34a853; color: white; }
+        .risk-medium { background: #fbbc04; color: white; }
+        .risk-high { background: #ea4335; color: white; }
+        
+        /* Results styling */
+        .results { display: none; }
+        .risk-meter { 
+            text-align: center; 
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .risk-score { 
+            font-size: 48px; 
+            font-weight: bold; 
+            margin: 10px 0;
+        }
+        .threat-badge { 
+            display: inline-block;
+            padding: 10px 20px; 
+            border-radius: 25px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin: 10px 0;
+        }
+        .indicators { 
+            display: grid; 
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .indicator { 
+            padding: 15px; 
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .indicator-detected { background: #fee; color: #c00; }
+        .indicator-safe { background: #efe; color: #060; }
+        
+        @media (max-width: 768px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛡️ Misinformation Detection System v2.0</h1>
+            <p style="margin-top: 10px; color: #5f6368;">Advanced content analysis with pattern recognition</p>
+        </div>
+
+        <div class="grid">
+            <!-- Input Section -->
+            <div class="card">
+                <h2>📝 Content Analysis</h2>
+                <textarea id="contentInput" placeholder="Enter or paste content to analyze..."></textarea>
+                
+                <div style="margin-top: 20px;">
+                    <button class="btn-primary" onclick="analyzeContent()">🔍 Analyze Content</button>
+                    <button class="btn-secondary" onclick="clearAll()">Clear</button>
+                </div>
+                
+                <div class="examples">
+                    <p style="margin-bottom: 10px; color: #5f6368;">Quick examples:</p>
+                    <button class="example-btn risk-low" onclick="loadExample('low')">Low Risk</button>
+                    <button class="example-btn risk-medium" onclick="loadExample('medium')">Medium Risk</button>
+                    <button class="example-btn risk-high" onclick="loadExample('high')">High Risk</button>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="card">
+                <div id="emptyState" style="text-align: center; padding: 50px; color: #9aa0a6;">
+                    <div style="font-size: 64px; margin-bottom: 20px;">📊</div>
+                    <h3>No Analysis Yet</h3>
+                    <p>Enter content and click "Analyze" to see results</p>
+                </div>
+
+                <div id="results" class="results">
+                    <h2>📈 Analysis Results</h2>
+                    
+                    <div class="risk-meter">
+                        <div id="riskScore" class="risk-score">0%</div>
+                        <div id="threatBadge" class="threat-badge">-</div>
+                    </div>
+
+                    <h3 style="margin-bottom: 15px;">Detected Indicators:</h3>
+                    <div id="indicators" class="indicators"></div>
+                    
+                    <div style="margin-top: 20px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                        <h4 style="margin-bottom: 10px;">Statistics</h4>
+                        <div id="stats"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const examples = {
+            low: "The weather forecast for tomorrow shows partly cloudy skies with temperatures reaching 72 degrees Fahrenheit.",
+            medium: "Breaking news: Scientists discover surprising new benefits of drinking coffee. You won't believe what they found!",
+            high: "URGENT!!! This SHOCKING secret they don't want you to know! Government CONSPIRACY EXPOSED! Share before it's DELETED!!!"
+        };
+
+        function loadExample(level) {
+            document.getElementById('contentInput').value = examples[level];
+        }
+
+        function clearAll() {
+            document.getElementById('contentInput').value = '';
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('emptyState').style.display = 'block';
+        }
+
+        async function analyzeContent() {
+            const text = document.getElementById('contentInput').value.trim();
+            if (!text) {
+                alert('Please enter some content to analyze');
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:8000/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text, platform: 'web' })
+                });
+
+                if (!response.ok) throw new Error('Analysis failed');
+                
+                const data = await response.json();
+                displayResults(data);
+                
+            } catch (error) {
+                alert('Error: Make sure the API server is running on port 8000');
+                console.error(error);
+            }
+        }
+
+        function displayResults(data) {
+            // Hide empty state, show results
+            document.getElementById('emptyState').style.display = 'none';
+            document.getElementById('results').style.display = 'block';
+
+            // Update risk score
+            const percentage = Math.round(data.risk_score * 100);
+            const scoreElement = document.getElementById('riskScore');
+            scoreElement.textContent = percentage + '%';
+            
+            // Set color based on threat level
+            const colors = {
+                green: '#34a853',
+                yellow: '#fbbc04',
+                orange: '#ff6d00',
+                red: '#ea4335'
+            };
+            scoreElement.style.color = colors[data.threat_level] || '#000';
+
+            // Update threat badge
+            const badge = document.getElementById('threatBadge');
+            badge.textContent = data.threat_level.toUpperCase();
+            badge.style.background = colors[data.threat_level];
+            badge.style.color = 'white';
+
+            // Update indicators
+            const indicatorsDiv = document.getElementById('indicators');
+            indicatorsDiv.innerHTML = '';
+            
+            if (data.indicators) {
+                Object.entries(data.indicators).forEach(([key, detected]) => {
+                    const div = document.createElement('div');
+                    div.className = `indicator ${detected ? 'indicator-detected' : 'indicator-safe'}`;
+                    div.innerHTML = `
+                        <span>${key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                        <span>${detected ? '⚠️ Detected' : '✅ Clear'}</span>
+                    `;
+                    indicatorsDiv.appendChild(div);
+                });
+            }
+
+            // Update stats
+            const statsDiv = document.getElementById('stats');
+            statsDiv.innerHTML = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div>📏 Length: ${data.content_length} chars</div>
+                    <div>⚡ Risk: ${percentage}%</div>
+                </div>
+            `;
+
+            // Add detailed analysis if available
+            if (data.detailed_analysis && data.detailed_analysis.risk_breakdown) {
+                const breakdown = data.detailed_analysis.risk_breakdown;
+                let breakdownHtml = '<h4 style="margin: 20px 0 10px 0;">Risk Breakdown:</h4><div style="font-size: 14px;">';
+                Object.entries(breakdown).forEach(([key, value]) => {
+                    breakdownHtml += `<div style="margin: 5px 0;">${key.replace(/_/g, ' ')}: ${value}</div>`;
+                });
+                breakdownHtml += '</div>';
+                statsDiv.innerHTML += breakdownHtml;
+            }
+        }
+    </script>
+</body>
+</html>
